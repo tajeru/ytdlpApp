@@ -1,0 +1,133 @@
+/* グローバルカラー変数（カラー名で管理） */
+:root {
+  --global-color: white;
+  --primary-bg: #a7b5bc;
+  --container-bg: #3b4047;
+  --heading-color: whitesmoke;
+  --input-border: #e2c650;
+  --input-focus: #af900c;
+  --button-bg: #a7b5bc;
+  --button-text: black;
+  --button-hover-bg: #6e818a;
+  --button-hover-text: white;
+  --status-color: white;
+  --progress-color: black;
+  --progress-bg: gainsboro;
+}
+
+/* Google Fonts の Roboto を利用 */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: var(--primary-bg);
+  margin: 0;
+  padding: 0;
+  color: var(--global-color);
+}
+
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  background: var(--container-bg);
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--heading-color);
+}
+
+.input-group, .folder-group, .radio-group {
+  margin-bottom: 20px;
+}
+
+.input-group label,
+.radio-group label {
+  font-weight: 500;
+  margin-bottom: 5px;
+  display: block;
+}
+
+input[type="text"] {
+  width: 90%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 3px solid var(--input-border);
+  border-radius: 4px;
+  transition: border-color 0.3s;
+}
+
+input[type="text"]:focus {
+  border-color: var(--input-focus);
+  outline: none;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: var(--button-hover-bg);
+  color: var(--button-hover-text);
+}
+
+/* folder-group を横並びに */
+.folder-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 保存先のパスは細字に */
+.small-text {
+  font-size: 0.9em;
+  color: var(--global-color);
+}
+
+#status {
+  margin: 10px 0;
+  font-size: 1.1em;
+  color: var(--status-color);
+  text-align: center;
+}
+
+#progress-output {
+  background: var(--progress-bg);
+  padding: 10px;
+  border-radius: 4px;
+  font-family: monospace;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: var(--progress-color);
+}
+
+/* 中央配置 */
+.center {
+  text-align: center;
+}
+
+#app-version {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  font-size: 0.8em;
+  color: var(--global-color);
+  opacity: 0.7;
+}

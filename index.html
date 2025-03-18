@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Youtube-dl App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+  <h1>Youtube-dl</h1>
+  
+  <div class="input-group">
+    <label for="url-input">URLを入力:</label>
+    <input id="url-input" type="text" placeholder="URLを入力" />
+    <div class="btn-group">
+      <button id="paste-url">貼り付け</button>
+      <button id="reset-url">リセット</button>
+    </div>
+  </div>
+  
+  <!-- 保存先とパスを同じ横並びに -->
+  <div class="folder-group">
+    <button id="select-folder">保存先を選択</button>
+    <span id="save-folder-display" class="small-text"></span>
+  </div>
+  
+  <h2>出力方法</h2>
+  <div class="radio-group">
+    <label><input type="radio" name="command" value="music"> 音楽(.m4a)</label>
+    <label><input type="radio" name="command" value="video"> ビデオ(.mp4)</label>
+    <label><input type="radio" name="command" value="playlist-music"> プレイリスト(.m4a)</label>
+  </div>
+  
+  <!-- ダウンロードボタンを中央配置 -->
+  <div class="center">
+    <button id="run-command">ダウンロード</button>
+  </div>
+  
+  <p id="status"></p>
+  <pre id="progress-output"></pre>
+  <div id="app-version"></div>
+</div>
+<script src="renderer.js"></script>
+</body>
+</html>
