@@ -16,7 +16,8 @@
     "electron-builder": "^23.6.0"
   },
   "dependencies": {
-    "electron-is-dev": "^3.0.1"
+    "electron-is-dev": "^3.0.1",
+    "electron-updater": "^6.3.9"
   },
   "build": {
     "appId": "com.example.ytdlapp",
@@ -32,7 +33,9 @@
       {
         "from": "bin",
         "to": "bin",
-        "filter": [ "**/*" ]
+        "filter": [
+          "**/*"
+        ]
       },
       "package.json",
       "main.js",

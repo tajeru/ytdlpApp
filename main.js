@@ -36,7 +36,7 @@ const path = require('path');
       mainWindow.webContents.send('app-version', pkg.version);
     });
 
-    // メニューの定義（View メニューに「保存先リセット」を追加）
+    // メニューの定義
     const menuTemplate = [
       {
         label: 'File',
@@ -65,7 +65,6 @@ const path = require('path');
           {
             label: '保存先リセット',
             click: () => {
-              // ユーザーが「保存先リセット」を選んだ場合のみ、renderer にリセット通知を送信
               mainWindow.webContents.send('reset-save-folder');
             }
           },
@@ -88,6 +87,18 @@ const path = require('path');
             click: async () => {
               const { shell } = require('electron');
               await shell.openExternal('https://electronjs.org');
+            }
+          }
+        ]
+      },
+      {
+        label: 'Update',
+        submenu: [
+          {
+            label: 'yt-dlpの更新',
+            click: () => {
+              // メニューから「yt-dlpの更新」が選ばれたとき、update-ytdlp-request イベントを送信
+              mainWindow.webContents.send('update-ytdlp');
             }
           }
         ]
@@ -171,4 +182,50 @@ const path = require('path');
       event.reply('command-output', '無効なコマンドです！');
     }
   });
+
+  // yt-dlp の更新リクエストを受け取る
+  ipcMain.on('update-ytdlp-request', (event) => {
+    // yt-dlp のアップデートコマンド（-U オプション）
+    const updateCommand = `"${ytDlpPath}" -U`;
+    console.log('Updating yt-dlp: ' + updateCommand);
+
+    const child = spawn(updateCommand, { shell: true });
+    let updateOutput = '';
+
+    child.stdout.on('data', (data) => {
+      updateOutput += data.toString();
+    });
+    child.stderr.on('data', (data) => {
+      updateOutput += data.toString();
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        // コマンド出力から判断する（"Updated" が含まれていれば最新版）
+        let message = '';
+        if (updateOutput.includes("up-to-date") || updateOutput.includes("Updated")) {
+           message = '最新版になりました。';
+        } else {
+           message = 'すでに最新版です。';
+        }
+        dialog.showMessageBox(mainWindow, {
+           type: 'info',
+           title: 'yt-dlpの更新',
+           message: message,
+           detail: updateOutput
+        });
+        event.reply('update-ytdlp-response', message + "\n" + updateOutput);
+      } else {
+        dialog.showMessageBox(mainWindow, {
+           type: 'error',
+           title: 'yt-dlp更新エラー',
+           message: 'yt-dlpの更新に失敗しました。',
+           detail: `終了コード: ${code}\n${updateOutput}`
+        });
+        event.reply('update-ytdlp-response', `yt-dlpの更新に失敗しました。（終了コード: ${code}）\n${updateOutput}`);
+      }
+    });
+  });
+
+
 })();
