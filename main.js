@@ -112,6 +112,8 @@ const path = require('path');
   // コマンドのリスト（出力パスは後で動的に設定）
   const commands = {
     "music": `"${ytDlpPath}" -x --audio-format m4a --audio-quality 0`,
+    "music-wav": `"${ytDlpPath}" -x --audio-format wav --audio-quality 0`,
+    "itunes": `"${ytDlpPath}" -x --audio-format m4a --audio-quality 0 --embed-thumbnail --add-metadata --postprocessor-args "ffmpeg:-movflags +faststart"`,
     "video": `"${ytDlpPath}" --recode-video mp4`,
     "playlist-music": `"${ytDlpPath}" -f b -x --audio-format m4a --audio-quality 0`,
     "playlist-video": `"${ytDlpPath}" --recode-video mp4`
@@ -130,58 +132,78 @@ const path = require('path');
     }
   });
 
-  ipcMain.on('execute-command', (event, data) => {
-    let { commandKey, url, saveFolder } = data;
-    console.log('Received command: ' + commandKey + ' with URL: ' + url + ', saveFolder: ' + saveFolder);
+ ipcMain.on('execute-command', (event, data) => {
+   let { commandKey, url, saveFolder } = data;
+   console.log('Received command: ' + commandKey + ' with URL: ' + url + ', saveFolder: ' + saveFolder);
 
-    // 音楽、ビデオの場合は URL のチェックとクリーンアップ
-    if ((commandKey === "music" || commandKey === "video")) {
-      if (!url || url.trim() === "") {
-        event.reply('command-output', 'エラー: 適切なURLを入力してください！');
-        return;
-      }
-      try {
-        const parsedUrl = new URL(url);
-        if ((parsedUrl.hostname.includes("youtube.com") || parsedUrl.hostname.includes("youtu.be")) &&
-            parsedUrl.searchParams.has("v")) {
-          url = `${parsedUrl.origin}${parsedUrl.pathname}?v=${parsedUrl.searchParams.get("v")}`;
-        }
-      } catch (e) {
-        event.reply('command-output', 'エラー: URLの解析に失敗しました！');
-        return;
-      }
-    }
+   // 音楽、ビデオの場合は URL のチェックとクリーンアップ
+   if ((commandKey === "music" || commandKey === "video")) {
+     if (!url || url.trim() === "") {
+       event.reply('command-output', 'エラー: 適切なURLを入力してください！');
+       return;
+     }
+     try {
+       const parsedUrl = new URL(url);
+       if ((parsedUrl.hostname.includes("youtube.com") || parsedUrl.hostname.includes("youtu.be")) &&
+           parsedUrl.searchParams.has("v")) {
+         url = `${parsedUrl.origin}${parsedUrl.pathname}?v=${parsedUrl.searchParams.get("v")}`;
+       }
+     } catch (e) {
+       event.reply('command-output', 'エラー: URLの解析に失敗しました！');
+       return;
+     }
+   }
 
-    if (commands[commandKey]) {
-      let fullCommand = commands[commandKey];
-      // 保存先の指定（saveFolder がある場合）
-      if (saveFolder && saveFolder.trim() !== "") {
-        fullCommand += ` -o "${saveFolder}/%(title)s.%(ext)s"`;
-      }
-      // URLが入力されている場合、コマンドに引数として連結
-      if (url && url.trim() !== "") {
-        fullCommand += ' ' + url;
-      }
-      console.log('Executing command: ' + fullCommand);
+   if (commands[commandKey]) {
+     let fullCommand = commands[commandKey];
+     // 保存先の指定（saveFolder がある場合）
+     if (saveFolder && saveFolder.trim() !== "") {
+       fullCommand += ` -o "${saveFolder}/%(title)s.%(ext)s"`;
+     }
+     // URLが入力されている場合、コマンドに引数として連結
+     if (url && url.trim() !== "") {
+       fullCommand += ' ' + url;
+     }
+     console.log('Executing command: ' + fullCommand);
 
-      const child = spawn(fullCommand, { shell: true });
-      child.stdout.on('data', (data) => {
-        event.reply('command-progress', data.toString());
-      });
-      child.stderr.on('data', (data) => {
-        event.reply('command-progress', data.toString());
-      });
-      child.on('close', (code) => {
-        if (code === 0) {
-          event.reply('command-output', `ダウンロードできました`);
-        } else {
-          event.reply('command-output', `エラーが発生しました！（終了コード: ${code}）`);
-        }
-      });
-    } else {
-      event.reply('command-output', '無効なコマンドです！');
-    }
-  });
+     // Windows環境で日本語出力が文字化けしないように、環境変数 PYTHONIOENCODING を 'utf-8' に設定
+     const child = spawn(fullCommand, {
+       shell: true,
+       env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+     });
+
+     let outputData = ""; // stdout, stderr の出力を蓄積
+
+     child.stdout.on('data', (data) => {
+       const text = data.toString();
+       outputData += text;
+       event.reply('command-progress', text);
+     });
+     child.stderr.on('data', (data) => {
+       const text = data.toString();
+       outputData += text;
+       event.reply('command-progress', text);
+     });
+     child.on('close', (code) => {
+       if (code === 0) {
+         // 終了コードが0なら常に成功
+         event.reply('command-output', "ダウンロードできました");
+       } else if (code === 1) {
+         // 終了コード1の場合、出力内に特定の文字列が含まれるかチェック
+         if (outputData.includes("すでに存在しています") || outputData.includes("変換は不要です")) {
+           event.reply('command-output', "ダウンロードできました（警告メッセージ：" + outputData.trim() + "）");
+         } else {
+           event.reply('command-output', "エラーが発生しました！（終了コード: " + code + "）\n" + outputData);
+         }
+       } else {
+         event.reply('command-output', "エラーが発生しました！（終了コード: " + code + "）\n" + outputData);
+       }
+     });
+   } else {
+     event.reply('command-output', '無効なコマンドです！');
+   }
+ });
+
 
   // yt-dlp の更新リクエストを受け取る
   ipcMain.on('update-ytdlp-request', (event) => {
